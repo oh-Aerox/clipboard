@@ -1,0 +1,13 @@
+node_modules/
+dist/
+out/
+release/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 由 npm run preview 生成的界面截图（README 用的存在 docs/）
+tests/screenshots/
