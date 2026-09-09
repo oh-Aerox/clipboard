@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'self'; script-src 'self';"
+    />
+    <title>剪贴板设置</title>
+    <link rel="stylesheet" href="settings.css" />
+  </head>
+  <body>
+    <h1>剪贴板设置</h1>
+
+    <section class="card">
+      <h2>快捷键</h2>
+      <p class="card__hint">点击输入框后直接按下组合键；至少需要一个修饰键（Ctrl / Alt / Shift / Win）。</p>
+
+      <div class="row">
+        <label for="hk-toggle">显示 / 隐藏面板</label>
+        <div class="row__control">
+          <input id="hk-toggle" class="hotkey" type="text" readonly placeholder="点击后按下组合键" />
+          <button class="btn btn--ghost" type="button" data-reset="toggle">恢复默认</button>
+        </div>
+      </div>
+      <p class="status" id="hk-toggle-status"></p>
+
+      <div class="row">
+        <label for="hk-clear">清空历史（保留置顶）</label>
+        <div class="row__control">
+          <input id="hk-clear" class="hotkey" type="text" readonly placeholder="未设置" />
+          <button class="btn btn--ghost" type="button" data-clear="clear">不绑定</button>
+        </div>
+      </div>
+      <p class="status" id="hk-clear-status"></p>
+    </section>
+
+    <section class="card">
+      <h2>历史记录</h2>
+
+      <div class="row">
+        <label for="max-items">保留最近条数</label>
+        <div class="row__control">
+          <input id="max-items" type="range" min="5" max="500" step="5" />
+          <output id="max-items-value" class="output"></output>
+        </div>
+      </div>
+      <p class="card__hint">超出这个条数后，最旧的记录会被自动丢弃；<b>置顶</b>的记录不参与丢弃。</p>
+
+      <div class="row">
+        <label for="max-text">单条文本长度上限</label>
+        <div class="row__control">
+          <input id="max-text" type="number" min="1000" max="5000000" step="1000" />
+          <span class="unit">字符</span>
+        </div>
+      </div>
+      <p class="card__hint">超过上限的内容不记录，避免一次复制整本文档把应用拖慢。</p>
+
+      <label class="check">
+        <input id="capture-images" type="checkbox" />
+        <span>记录复制的图片（保存为 PNG 缩略图与原图）</span>
+      </label>
+
+      <div class="row row--actions">
+        <button id="btn-clear-keep" class="btn" type="button">清空历史（保留置顶）</button>
+        <button id="btn-clear-all" class="btn btn--danger" type="button">全部清空</button>
+      </div>
+      <p class="status" id="clear-status"></p>
+    </section>
+
+    <section class="card">
+      <h2>面板与粘贴</h2>
+
+      <div class="row">
+        <label for="panel-height">面板高度</label>
+        <div class="row__control">
+          <input id="panel-height" type="range" min="160" max="600" step="10" />
+          <output id="panel-height-value" class="output"></output>
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="poll-interval">剪贴板检测间隔</label>
+        <div class="row__control">
+          <input id="poll-interval" type="range" min="200" max="3000" step="100" />
+          <output id="poll-interval-value" class="output"></output>
+        </div>
+      </div>
+      <p class="card__hint">间隔越短响应越快，占用也略高；默认 600 毫秒基本无感。</p>
+
+      <label class="check">
+        <input id="auto-paste" type="checkbox" />
+        <span>选中记录后自动向前台窗口发送 Ctrl+V</span>
+      </label>
+      <label class="check">
+        <input id="hide-on-blur" type="checkbox" />
+        <span>面板失去焦点时自动隐藏</span>
+      </label>
+      <label class="check">
+        <input id="launch-at-login" type="checkbox" />
+        <span>开机自动启动</span>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>关于</h2>
+      <p class="about">
+        版本 <span id="version">—</span> · 数据目录
+        <button id="btn-data-dir" class="link" type="button">打开</button>
+      </p>
+      <p class="about about--path" id="data-dir">—</p>
+      <div class="row row--actions">
+        <button id="btn-quit" class="btn btn--danger" type="button">退出剪贴板</button>
+      </div>
+    </section>
+
+    <script src="settings.js"></script>
+  </body>
+</html>

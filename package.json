@@ -1,0 +1,46 @@
+{
+  "name": "clipboard-panel",
+  "version": "1.0.0",
+  "description": "Windows 剪贴板管理器：方块平铺屏幕底部，支持搜索、历史条数限制与自定义快捷键",
+  "main": "src/main/main.js",
+  "author": "oh-Aerox",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "dist": "electron-builder --win",
+    "pack": "electron-builder --win --dir",
+    "test": "electron tests/smoke.js",
+    "preview": "electron tests/ui-preview.js"
+  },
+  "devDependencies": {
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.ohaerox.clipboardpanel",
+    "productName": "ClipboardPanel",
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}

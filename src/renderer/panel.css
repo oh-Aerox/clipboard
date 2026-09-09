@@ -1,0 +1,398 @@
+/* 底部剪贴板面板：固定深色外观，避免在任意壁纸/应用之上都过于抢眼 */
+:root {
+  --bg: #0f1115;
+  --bg-bar: #16191f;
+  --tile: #1b1f27;
+  --tile-hover: #222834;
+  --tile-active: #2a3446;
+  --line: #272c36;
+  --text: #e7eaf0;
+  --text-dim: #9aa3b2;
+  --text-faint: #6b7484;
+  --accent: #5b9dff;
+  --accent-soft: rgba(91, 157, 255, 0.16);
+  --warn: #ff6b6b;
+  --tile-w: 196px;
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.5 "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+  user-select: none;
+  border-top: 1px solid var(--line);
+}
+
+/* ---------------- 顶部工具条 ---------------- */
+
+.bar {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-bar);
+  border-bottom: 1px solid var(--line);
+}
+
+.search {
+  position: relative;
+  display: flex;
+  flex: 0 1 380px;
+  align-items: center;
+}
+
+.search__icon {
+  position: absolute;
+  left: 9px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+#search {
+  width: 100%;
+  padding: 7px 28px 7px 30px;
+  color: var(--text);
+  font: inherit;
+  background: #11141a;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  user-select: text;
+}
+
+#search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+#search::placeholder {
+  color: var(--text-faint);
+}
+
+.search__clear {
+  position: absolute;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1;
+  background: none;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.search__clear:hover {
+  color: var(--text);
+  background: var(--tile-hover);
+}
+
+.bar__meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-faint);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.bar__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.switch {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-right: 4px;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.switch input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.btn {
+  padding: 6px 11px;
+  color: var(--text-dim);
+  font: inherit;
+  background: #1b1f27;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  color: var(--text);
+  background: var(--tile-hover);
+}
+
+.btn--icon {
+  width: 30px;
+  padding: 6px 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ---------------- 方块条 ---------------- */
+
+.strip {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 10px;
+  align-items: stretch;
+  padding: 10px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  outline: none;
+  scrollbar-color: #333a47 transparent;
+  scrollbar-width: thin;
+}
+
+.strip::-webkit-scrollbar {
+  height: 8px;
+}
+
+.strip::-webkit-scrollbar-thumb {
+  background: #333a47;
+  border-radius: 4px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex: 0 0 var(--tile-w);
+  flex-direction: column;
+  width: var(--tile-w);
+  padding: 8px 9px;
+  overflow: hidden;
+  text-align: left;
+  background: var(--tile);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.1s ease, border-color 0.1s ease, transform 0.1s ease;
+}
+
+.tile:hover {
+  background: var(--tile-hover);
+}
+
+.tile.is-selected {
+  background: var(--tile-active);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.tile.is-pinned {
+  border-left: 3px solid var(--accent);
+}
+
+.tile__top {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.tile__badge {
+  padding: 1px 6px;
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  background: var(--accent-soft);
+  border-radius: 4px;
+}
+
+.tile__badge[data-kind="image"] {
+  color: #ffca7a;
+  background: rgba(255, 202, 122, 0.14);
+}
+
+.tile__badge[data-kind="url"] {
+  color: #7ee0a8;
+  background: rgba(126, 224, 168, 0.14);
+}
+
+.tile__badge[data-kind="code"] {
+  color: #c9a0ff;
+  background: rgba(201, 160, 255, 0.14);
+}
+
+.tile__time {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.tile__body {
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* 用渐隐代替省略号：多行截断时视觉上更干净 */
+  mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent 100%);
+}
+
+.tile__body--code {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11.5px;
+}
+
+.tile__body mark {
+  color: #0f1115;
+  background: #ffd479;
+  border-radius: 2px;
+}
+
+.tile__image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.tile__foot {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.tile__index {
+  padding: 0 5px;
+  color: var(--text-faint);
+  font-size: 10px;
+  background: #11141a;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.tile__tools {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.tile:hover .tile__tools,
+.tile.is-selected .tile__tools {
+  opacity: 1;
+}
+
+.tool {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  background: #11141a;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.tool:hover {
+  color: var(--text);
+  background: var(--tile-hover);
+}
+
+.tool--danger:hover {
+  color: #fff;
+  background: var(--warn);
+  border-color: var(--warn);
+}
+
+.tool.is-on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------------- 空状态与底部提示 ---------------- */
+
+/* display:flex 会盖掉 hidden 属性自带的 display:none，必须显式再关一次 */
+.empty[hidden] {
+  display: none;
+}
+
+.empty {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.empty__title {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.empty__hint {
+  margin: 0;
+  font-size: 12px;
+}
+
+.hints {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 14px;
+  align-items: center;
+  padding: 5px 12px;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 11px;
+  white-space: nowrap;
+  background: var(--bg-bar);
+  border-top: 1px solid var(--line);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 16px;
+  padding: 0 4px;
+  color: var(--text-dim);
+  font: inherit;
+  text-align: center;
+  background: #11141a;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+}
