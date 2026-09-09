@@ -39,6 +39,11 @@ let settingsWin = null;
 let tray = null;
 let isQuitting = false;
 let hotkeyReport = { active: {}, failed: [] };
+/**
+ * 唤出面板之前记下的前台窗口句柄——取用内容后要把它重新激活再发 Ctrl+V。
+ * 面板一抢焦点，用户原来那个窗口就不是前台了，隐藏面板也不保证还回去。
+ */
+let pasteTarget = null;
 
 /* ------------------------------------------------------------------ *
  * 单实例：第二次启动时唤起已有实例的面板，而不是再开一个进程
@@ -77,6 +82,9 @@ function onReady() {
   createTray();
   registerIpc();
 
+  // 提前拉起粘贴助手：它承担唤出面板前的“记录前台窗口”，冷启动会拖慢首次唤出
+  paster.warmUp();
+
   watcher = new ClipboardWatcher(store, notifyHistoryChanged);
   watcher.start();
 
@@ -84,7 +92,7 @@ function onReady() {
   applyLaunchAtLogin();
 
   // 调试用：启动即展开面板，省得每次去按快捷键
-  if (process.argv.includes('--show')) showPanel();
+  if (process.argv.includes('--show')) togglePanel();
 
   if (hotkeyReport.failed.length) {
     // 快捷键被占用是最常见的“装完不生效”原因，第一时间提示用户
@@ -165,8 +173,33 @@ function createPanel() {
   });
 }
 
-function showPanel() {
+/** 取窗口的原生句柄（十进制字符串），用于和前台窗口句柄比对 */
+function handleOf(win) {
+  if (!win || win.isDestroyed()) return null;
+  try {
+    const buffer = win.getNativeWindowHandle();
+    const value =
+      buffer.length >= 8 ? buffer.readBigUInt64LE(0) : BigInt(buffer.readUInt32LE(0));
+    return value.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** 记下当前前台窗口作为粘贴目标。必须在面板 show/focus 之前调用。 */
+async function capturePasteTarget() {
+  const hwnd = await paster.captureForegroundWindow();
+  if (!hwnd) return;
+  // 前台窗口是我们自己的窗口时保留上一次的目标，
+  // 否则会把内容粘回面板自己的搜索框
+  const ours = [handleOf(panel), handleOf(settingsWin)].filter(Boolean);
+  if (ours.includes(hwnd)) return;
+  pasteTarget = hwnd;
+}
+
+async function showPanel() {
   if (!panel || panel.isDestroyed()) createPanel();
+  await capturePasteTarget();
   panel.setBounds(panelBounds());
   panel.setAlwaysOnTop(true, 'screen-saver');
   panel.show();
@@ -182,8 +215,12 @@ function hidePanel() {
 }
 
 function togglePanel() {
-  if (panel && !panel.isDestroyed() && panel.isVisible()) hidePanel();
-  else showPanel();
+  if (panel && !panel.isDestroyed() && panel.isVisible()) {
+    hidePanel();
+    return;
+  }
+  // 快捷键与托盘的回调不接收 Promise，异常在这里自己收掉
+  showPanel().catch((err) => console.error('[panel] 唤出面板失败:', err.message));
 }
 
 /* ------------------------------------------------------------------ *
@@ -328,9 +365,10 @@ function registerIpc() {
     hidePanel();
     const wantPaste =
       options && typeof options.paste === 'boolean' ? options.paste : store.config.autoPaste;
-    if (wantPaste) paster.paste();
+    // 先把唤出面板前的那个窗口激活回来，再发 Ctrl+V
+    const pasted = wantPaste ? await paster.paste(pasteTarget) : false;
     notifyHistoryChanged();
-    return { ok: true, pasted: Boolean(wantPaste) };
+    return { ok: true, pasted };
   });
 
   ipcMain.handle('item:delete', (_e, id) => {
