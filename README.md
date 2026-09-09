@@ -1,6 +1,6 @@
 # 剪贴板（Clipboard Panel）
 
-Windows 上的剪贴板历史工具：复制过的内容以**方块形式平铺在屏幕底部**，一个快捷键唤出，选中即回填剪贴板并自动粘贴到当前窗口。
+Windows 上的剪贴板历史工具：复制过的内容以**方块形式平铺在屏幕底部**，一个快捷键唤出，选中即回填剪贴板并自动粘贴回你原来在敲字的那个窗口。
 
 ![底部面板](docs/panel.png)
 
@@ -18,7 +18,7 @@ Windows 上的剪贴板历史工具：复制过的内容以**方块形式平铺�
 
 - **文本与图片**都会记录。图片存为 PNG，方块里显示缩略图。
 - 自动识别内容类型（链接 / 邮箱 / 路径 / 代码 / 文本 / 图片）并打标签。
-- 选中后自动向前台窗口发送 `Ctrl+V`，可关闭。
+- 选中后自动粘贴回**唤出面板前的那个窗口**，可关闭。
 - 置顶常用内容，不会被条数上限挤掉。
 - 常驻托盘；重复内容不会产生第二个方块，只会提到最前面。
 
@@ -40,12 +40,24 @@ npm start
 
 启动后应用只驻留在托盘，按 `Ctrl+Shift+V` 唤出底部面板。
 
-打包成安装包：
+## 打包成安装包
 
 ```bash
-npm run dist    # 生成 NSIS 安装包到 dist/
-npm run pack    # 只生成免安装目录，便于快速验证
+npm run dist    # 生成 dist\ClipboardPanel Setup 1.0.0.exe（NSIS，约 106 MB）
+npm run pack    # 只生成 dist\win-unpacked\，双击 ClipboardPanel.exe 即可免安装运行
 ```
+
+安装包是可选安装目录的向导式安装（非一键静默），会创建桌面快捷方式。首次构建时
+electron-builder 需要下载 NSIS 工具链，国内网络建议先设镜像：
+
+```bash
+set ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/
+npm run dist
+```
+
+> 安装包**没有代码签名**（没有配置证书），Windows SmartScreen 首次运行会提示
+> “未知发布者”，需要点“更多信息 → 仍要运行”。要消掉这个提示得配置代码签名证书，
+> 在 `package.json` 的 `build.win` 里加 `certificateFile` / `certificatePassword`。
 
 ## 操作
 
@@ -54,7 +66,7 @@ npm run pack    # 只生成免安装目录，便于快速验证
 | `Ctrl+Shift+V` | 显示 / 隐藏面板（可改） |
 | 直接输入 | 搜索剪贴板内容 |
 | `←` `→` / `Home` `End` | 选择方块 |
-| `Enter` | 取用并粘贴到前台窗口 |
+| `Enter` | 取用并粘贴回唤出面板前的那个窗口 |
 | `Ctrl+Enter` | 只回填剪贴板，不粘贴 |
 | `Alt+1…9` | 快速取用第 1–9 个方块 |
 | `Ctrl+P` | 置顶 / 取消置顶 |
@@ -83,7 +95,7 @@ npm run pack    # 只生成免安装目录，便于快速验证
 | `maxItems` | `50` | 保留条数上限（5–1000），置顶项不计入 |
 | `hotkeys.toggle` | `Ctrl+Shift+V` | 显示 / 隐藏面板 |
 | `hotkeys.clear` | `""` | 清空历史（保留置顶），空表示不绑定 |
-| `autoPaste` | `true` | 取用后自动发送 `Ctrl+V` |
+| `autoPaste` | `true` | 取用后自动粘贴回唤出面板前的那个窗口 |
 | `hideOnBlur` | `true` | 面板失焦自动隐藏 |
 | `panelHeight` | `240` | 面板高度（160–600） |
 | `pollInterval` | `600` | 剪贴板检测间隔毫秒（200–5000） |
@@ -99,6 +111,7 @@ npm run pack    # 只生成免安装目录，便于快速验证
 npm run dev       # 带 --dev 启动，托盘菜单里多一个开发者工具入口
 npm start -- --show   # 启动即展开面板，省得按快捷键
 npm test          # 核心逻辑冒烟测试（53 项）
+npm run test:paste # 自动粘贴链路自检（会弹窗并短暂抢焦点）
 npm run preview   # 渲染真实界面并截图到 tests/screenshots/
 ```
 
@@ -121,11 +134,11 @@ src/main/          主进程
   watcher.js         轮询系统剪贴板、内容去重、类型识别
   query.js           历史搜索、排序与投影给渲染进程的字段
   hotkeys.js         全局快捷键注册与可用性校验
-  paste.js           常驻 PowerShell 进程，用于发送 Ctrl+V
+  paste.js           常驻 PowerShell 进程：记录/恢复前台窗口并发送 Ctrl+V
 src/preload/       contextBridge 通道（渲染进程拿不到 Node）
 src/renderer/      面板与设置界面
 tools/             图标生成脚本
-tests/             冒烟测试与界面预览工具
+tests/             冒烟测试、自动粘贴自检与界面预览工具
 ```
 
 几个值得说明的取舍：
@@ -133,13 +146,24 @@ tests/             冒烟测试与界面预览工具
 - **搜索在主进程做。** 渲染进程手上只有每条 400 字的预览，正文全文只存在主进程；放在渲染进程过滤会漏掉长文本靠后的内容。
 - **轮询而不是监听。** Windows 不向 Electron 透出剪贴板变更事件，只能定时轮询 + 内容哈希去重。
 - **图片按字节数短路。** 剪贴板上放着一张大图时，字节数没变就不重新取数据和哈希，把每轮开销降到零；代价是紧接着换成一张字节数完全相同的图会漏记。
-- **粘贴用常驻 PowerShell。** 每次粘贴都新起 `powershell.exe` 要 300ms 以上，常驻后单次粘贴只是往 stdin 写一行。
+- **自动粘贴要自己管焦点。** 面板要能打字搜索就必须抢焦点，一抢焦点用户原来那个
+  窗口就不是前台了，而 `hide()` 并不保证把焦点还回去。所以唤出面板【之前】先记下
+  当时的前台窗口句柄，取用内容时再显式把它激活、确认真的回到前台之后才发 `Ctrl+V`。
+  激活用的是 `AttachThreadInput` 那套绕过 `SetForegroundWindow` 限制的常规做法。
+- **粘贴用常驻 PowerShell。** 上面这些都要调 Win32 API，Electron 没有对应接口。
+  常驻而不是每次新起，是因为 `powershell.exe` 冷启动加编译内嵌 C# 要 1 秒以上，
+  而“记录前台窗口”卡在唤出面板的路径上，慢一下立刻能感觉到。
+  脚本正文刻意全是 ASCII：`Add-Type` 会把内嵌 C# 落成临时 `.cs` 再编译，
+  中文注释在这一步的编码往返里会被打乱，足以让整个类编译失败。
 - **Electron 44 的剪贴板 API 是异步的**（`readText()` 返回 Promise，图片走 `read()` + `ClipboardItem.getType('image/png')`），旧版的 `readImage()` / `availableFormats()` 已被移除。测试里专门有一段打真实 API，就是为了拦住这类上游变更。
 
 ## 已知限制
 
 - 只做了 Windows。自动粘贴依赖 `SendKeys`，`paste.js` 在非 Windows 上直接空转。
-- 自动粘贴向“当前前台窗口”发键。以管理员权限运行的窗口不接受普通权限进程发来的按键，这种情况下请用 `Ctrl+Enter` 只复制，再手动粘贴。
+- 自动粘贴靠模拟按键。以管理员权限运行的窗口不接受普通权限进程发来的按键，
+  这种情况下请用 `Ctrl+Enter` 只复制，再手动粘贴。
+- 通过**托盘图标**唤出面板时，记下的前台窗口可能是任务栏而不是你原来的窗口，
+  此时自动粘贴不一定落到预期位置；用快捷键唤出则没有这个问题。
 - 历史以明文 JSON 存放，复制过的密码等敏感内容同样会落盘；介意的话把保留条数调小，或用托盘菜单随手清空。
 
 ## License
