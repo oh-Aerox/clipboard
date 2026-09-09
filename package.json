@@ -12,7 +12,8 @@
     "dist": "electron-builder --win",
     "pack": "electron-builder --win --dir",
     "test": "electron tests/smoke.js",
-    "preview": "electron tests/ui-preview.js"
+    "preview": "electron tests/ui-preview.js",
+    "test:paste": "electron tests/paste-check.js"
   },
   "devDependencies": {
     "electron": "^44.3.0",
