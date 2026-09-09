@@ -254,16 +254,18 @@ async function clipboardCaptureTests() {
     await quiet.tick();
     equal('resync 之后当前剪贴板内容不会入库', fresh.getHistory().length, 0);
 
-    // 粘贴助手：只验证常驻 PowerShell 起得来且脚本能正常循环，
-    // 不真的发 Ctrl+V —— 那会把内容粘进当前前台窗口。
+    // 粘贴助手：验证常驻 PowerShell 起得来、里面的 Win32 封装能编译、
+    // 并且请求/回复协议通得过。这里只发只读的 capture，
+    // 不发 focus / paste —— 那会抢焦点并把内容粘进当前前台窗口。
     const paster = new Paster();
+    const hwnd = await paster.captureForegroundWindow();
+    check(
+      '粘贴助手能取到前台窗口句柄（Add-Type 与协议均正常）',
+      typeof hwnd === 'string' && /^[1-9]\d*$/.test(hwnd),
+      `返回 ${JSON.stringify(hwnd)}（若为 null，说明助手没起来或当前没有前台窗口）`,
+    );
     const helper = paster._ensure();
-    check('粘贴助手进程已启动', Boolean(helper) && helper.stdin.writable);
-    if (helper) {
-      helper.stdin.write('noop\n');
-      await new Promise((resolve) => setTimeout(resolve, 900));
-      check('粘贴助手脚本没有退出（Add-Type 正常）', helper.exitCode === null);
-    }
+    check('粘贴助手进程仍在运行', Boolean(helper) && helper.exitCode === null);
     paster.dispose();
   } finally {
     if (restore) await clipboard.writeText(restore);
