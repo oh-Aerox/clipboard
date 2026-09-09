@@ -40,12 +40,24 @@ npm start
 
 启动后应用只驻留在托盘，按 `Ctrl+Shift+V` 唤出底部面板。
 
-打包成安装包：
+## 打包成安装包
 
 ```bash
-npm run dist    # 生成 NSIS 安装包到 dist/
-npm run pack    # 只生成免安装目录，便于快速验证
+npm run dist    # 生成 dist\ClipboardPanel Setup 1.0.0.exe（NSIS，约 106 MB）
+npm run pack    # 只生成 dist\win-unpacked\，双击 ClipboardPanel.exe 即可免安装运行
 ```
+
+安装包是可选安装目录的向导式安装（非一键静默），会创建桌面快捷方式。首次构建时
+electron-builder 需要下载 NSIS 工具链，国内网络建议先设镜像：
+
+```bash
+set ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/
+npm run dist
+```
+
+> 安装包**没有代码签名**（没有配置证书），Windows SmartScreen 首次运行会提示
+> “未知发布者”，需要点“更多信息 → 仍要运行”。要消掉这个提示得配置代码签名证书，
+> 在 `package.json` 的 `build.win` 里加 `certificateFile` / `certificatePassword`。
 
 ## 操作
 
